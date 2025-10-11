@@ -1,18 +1,13 @@
-from extensions import db
+from extensions import Base
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, Text, Boolean, DateTime
 from datetime import datetime, timezone
 
-class Event(db.Model):
+class Event(Base):
     __tablename__ = 'events'
 
+    # Auto-generated fields
     id: Mapped[int] = mapped_column(primary_key=True)
-    title: Mapped[str] = mapped_column(String(200))
-    description: Mapped[str | None] = mapped_column(Text)
-    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    location: Mapped[str | None] = mapped_column(String(200))
-    all_day: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc)
@@ -22,6 +17,16 @@ class Event(db.Model):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc)
     )
+
+    # Required fields
+    title: Mapped[str] = mapped_column(String(200))
+    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    # Optional fields
+    description: Mapped[str | None] = mapped_column(Text, default=None)
+    location: Mapped[str | None] = mapped_column(String(200), default=None)
+    all_day: Mapped[bool] = mapped_column(Boolean, default=False)
 
     def to_dict(self):
         return {
