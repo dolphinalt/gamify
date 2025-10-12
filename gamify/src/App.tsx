@@ -3,29 +3,31 @@ import CardGrid from "./components/CardGrid";
 import RewardCard from "./components/RewardCard";
 import RewardCardGrid from "./components/RewardCardGrid";
 */
+import { useState } from "react";
+import Sidebar from "./components/Sidebar";
 import DailyTasksCard from "./components/DailyTasksCard";
 import CalendarView from "./components/CalendarView";
 import TaskList from "./components/TaskList";
-import Sidebar from "./components/Sidebar";
-import { useState } from "react";
 
 const App = () => {
   const [currentPoints] = useState(100);
   const [dailyProgress] = useState(10);
 
   return (
-    <div className="flex flex-row p-7 min-h-screen bg-white gap-4">
-      <Sidebar currentPoints={currentPoints} />
+    <div className="flex flex-col lg:flex-row p-4 md:p-7 min-h-screen bg-white gap-4">
+      <div className="w-full lg:w-64">
+        <Sidebar currentPoints={currentPoints} />
+      </div>
 
-      <div className="flex-1 flex flex-col gap-4">
+      <div className="flex-1 flex flex-col gap-4 min-w-0">
         <DailyTasksCard progress={dailyProgress} />
 
-        <div className="flex-1 bg-light-gray rounded-4xl p-8">
+        <div className="flex-1 bg-light-gray rounded-4xl p-4 md:p-8">
           <CalendarView />
         </div>
       </div>
 
-      <div className="w-96 flex flex-col gap-4">
+      <div className="w-full lg:w-96 flex flex-col gap-4">
         <CalendarView isCompact />
         <TaskList />
       </div>
