@@ -1,9 +1,25 @@
 from flask import Blueprint, request, jsonify
 from extensions import db
 from models import Event
-from datetime import datetime
+from datetime import datetime, timezone
 
 api_bp = Blueprint('api', __name__)
+
+def parse_datetime(date_string: str) -> datetime:
+    """
+    Parse datetime string and converts to UTC if needed.
+    If date_string does not contain timezone information, it is assumed to be in UTC.
+    Returns datetime object with UTC timezone information.
+    """
+
+    dt = datetime.fromisoformat(date_string)
+
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+
+    return dt
 
 # Event Routes
 @api_bp.route('/events', methods=['GET'])
@@ -12,25 +28,34 @@ def get_events():
     Get all events, optionally filtered by date range
 
     Query Parameters:
-        start_date (str): ISO 8601 formatted start date to filter events (optional).
-        end_date (str): ISO 8601 formatted end date to filter events (optional).
+        start_time (str): ISO 8601 formatted start time to filter events (optional).
+        end_time (str): ISO 8601 formatted end time to filter events (optional).
 
     Returns:
         Response: JSON array of events with HTTP status 200.
+        Response: Error message with HTTP status 400 if date format is invalid or date range is invalid.
     """
 
-    start_date = request.args.get('start_date')
-    end_date = request.args.get('end_date')
+    start_time = request.args.get('start_time')
+    end_time = request.args.get('end_time')
 
     stmt = db.select(Event)
+    start_tm = None
+    end_tm = None
 
-    if start_date:
-        start_dt = datetime.fromisoformat(start_date)
-        stmt = stmt.where(Event.start_time >= start_dt)
+    try:
+        if start_time:
+            start_tm = parse_datetime(start_time)
+            stmt = stmt.where(Event.start_time >= start_tm)
+        if end_time:
+            end_tm = parse_datetime(end_time)
+            stmt = stmt.where(Event.end_time <= end_tm)
 
-    if end_date:
-        end_dt = datetime.fromisoformat(end_date)
-        stmt = stmt.where(Event.end_time <= end_dt)
+    except ValueError:
+        return jsonify({'error': 'Invalid date format. Use ISO 8601 format (YYYY-MM-DDThh:mm:ss)'}), 400
+
+    if start_tm and end_tm and end_tm < start_tm:
+        return jsonify({'error': 'End time cannot be before start time'}), 400
 
     stmt = stmt.order_by(Event.start_time)
 
@@ -50,6 +75,7 @@ def get_event(event_id):
     Returns:
         Response: JSON object of the event with HTTP status 200.
         Response: Error message with HTTP status 404 if event not found.
+        Response: Error message with HTTP status 500 for server errors.
     """
 
     event = db.get_or_404(Event, event_id)
@@ -78,11 +104,31 @@ def create_event():
     data = request.get_json()
 
     try:
+        title = data.get('title', '').strip()
+        if not title:
+            return jsonify({'error': 'Title cannot be empty'}), 400
+
+        if 'start_time' not in data or not data['start_time']:
+            return jsonify({'error': 'Start time is required'}), 400
+        if 'end_time' not in data or not data['end_time']:
+            return jsonify({'error': 'End time is required'}), 400
+
+        try:
+            start_time = parse_datetime(data['start_time'])
+            end_time = parse_datetime(data['end_time'])
+        except ValueError:
+            return jsonify({'error': 'Invalid date format. Use ISO 8601 format (YYYY-MM-DDThh:mm:ss)'}), 400
+
+        if end_time < start_time:
+            return jsonify({'error': 'End time cannot be before start time'}), 400
+
+        print(f'before creating event: start_time = {start_time}')
+
         event = Event(
-            title=data['title'],
+            title=title,
             description=data.get('description'),
-            start_time=datetime.fromisoformat(data['start_time'].replace('Z', '+00:00')),
-            end_time=datetime.fromisoformat(data['end_time'].replace('Z', '+00:00')),
+            start_time=start_time,
+            end_time=end_time,
             location=data.get('location'),
             all_day=data.get('all_day', False)
         )
@@ -90,10 +136,9 @@ def create_event():
         db.session.add(event)
         db.session.commit()
 
-        return jsonify(event.to_dict()), 201
+        print(f'after creating event: start time = {event.add_utc(event.start_time)}')
 
-    except KeyError as e:
-        return jsonify({'error': f'Missing required field: {str(e)}'}), 400
+        return jsonify(event.to_dict()), 201
 
     except Exception as e:
         db.session.rollback()
@@ -109,7 +154,7 @@ def update_event(event_id):
         event_id (int): ID of the event to update.
 
     Request Body (JSON):
-        title (str): Updated title of the event (optional).
+        title (str): Updated title of the event (optional), cannot be empty of provided.
         description (str): Updated description of the event (optional).
         start_time (str): Updated ISO 8601 formatted start time of the event (optional).
         end_time (str): Updated ISO 8601 formatted end time of the event (optional).
@@ -118,6 +163,14 @@ def update_event(event_id):
 
     Returns:
         Response: JSON object of the updated event with HTTP status 200.
+        Response: Error message with HTTP status 400 if:
+            - Title is provided and empty
+            - Date format is invalid
+            - End time is before start time
+            - New start time is after existing end time
+            - New end time is before existing start time
+            - all_day field is not a boolean
+        Response: Error message with HTTP status 404 if event is not found.
         Response: Error message with HTTP status 500 for server errors.
     """
 
@@ -126,16 +179,55 @@ def update_event(event_id):
 
     try:
         if 'title' in data:
-            event.title = data['title']
+            title = data.get('title', '').strip()
+            if not title:
+                db.session.rollback()
+                return jsonify({'error': 'Title cannot be empty'}), 400
+            event.title = title
+
         if 'description' in data:
             event.description = data['description']
+
+        new_start_time = None
+        new_end_time = None
+
         if 'start_time' in data:
-            event.start_time = datetime.fromisoformat(data['start_time'])
+            try:
+                new_start_time = parse_datetime(data['start_time'])
+            except ValueError:
+                db.session.rollback()
+                return jsonify({'error': 'Invalid date format. Use ISO 8601 format (YYYY-MM-DDThh:mm:ss)'}), 400
+
         if 'end_time' in data:
-            event.end_time = datetime.fromisoformat(data['end_time'])
+            try:
+                new_end_time = parse_datetime(data['end_time'])
+            except ValueError:
+                db.session.rollback()
+                return jsonify({'error': 'Invalid date format. Use ISO 8601 format (YYYY-MM-DDThh:mm:ss)'}), 400
+
+        if new_start_time and new_end_time:
+            if new_end_time < new_start_time:
+                db.session.rollback()
+                return jsonify({'error': 'End time cannot be before start time'}), 400
+        elif new_start_time and new_start_time > event.add_utc(event.end_time):
+            db.session.rollback()
+            return jsonify({'error': 'Start time cannot be after existing end time'}), 400
+        elif new_end_time and new_end_time < event.add_utc(event.start_time):
+            db.session.rollback()
+            return jsonify({'error': 'End time cannot be before existing start time'}), 400
+
+        if new_start_time:
+            event.start_time = new_start_time
+        if new_end_time:
+            event.end_time = new_end_time
+
         if 'location' in data:
             event.location = data['location']
+
         if 'all_day' in data:
+            if not isinstance(data['all_day'], bool):
+                db.session.rollback()
+                return jsonify({'error': 'all_day must be a boolean'}), 400
             event.all_day = data['all_day']
 
         db.session.commit()
@@ -155,7 +247,8 @@ def delete_event(event_id):
         event_id (int): ID of the event to delete.
 
     Returns:
-        Response: Success message with HTTP status 204 if deletion is successful.
+        Response: Empty response with HTTP status 204 if deletion is successful.
+        Response: Error message with HTTP status 404 if event not found.
         Response: Error message with HTTP status 500 for server errors.
     """
 
@@ -164,7 +257,7 @@ def delete_event(event_id):
     try:
         db.session.delete(event)
         db.session.commit()
-        return jsonify({'message': 'Event deleted successfully'}), 204
+        return '', 204
 
     except Exception as e:
         db.session.rollback()
