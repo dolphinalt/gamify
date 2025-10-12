@@ -1,8 +1,8 @@
 const TaskList = () => {
   const tasks = [
-    { name: "I&C GB: ZyBook", duration: "60m" },
-    { name: "I&C GB: Reading Quiz", duration: "30m" },
-    { name: "I&C GB: ICA", duration: "90m" },
+    { name: "I&C 6B: ZyBook", duration: "60m" },
+    { name: "I&C 6B: Reading Quiz", duration: "30m" },
+    { name: "I&C 6B: ICA", duration: "90m" },
   ];
 
   return (
