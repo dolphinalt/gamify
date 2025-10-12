@@ -10,26 +10,39 @@ import CalendarView from "./components/CalendarView";
 import TaskList from "./components/TaskList";
 
 const App = () => {
-  const [currentPoints] = useState(100);
-  const [dailyProgress] = useState(10);
+  const [currentPoints] = useState(250);
+  const [dailyProgress] = useState(54);
+  const [activeView, setActiveView] = useState<"dashboard" | "calendar">(
+    "calendar"
+  );
 
   return (
-    <div className="flex flex-col lg:flex-row p-4 md:p-7 min-h-screen bg-white gap-4">
-      <div className="w-full lg:w-64">
-        <Sidebar currentPoints={currentPoints} />
-      </div>
+    <div className="flex flex-col p-4 md:p-7 min-h-screen bg-white gap-4">
+      <DailyTasksCard progress={dailyProgress} />
 
-      <div className="flex-1 flex flex-col gap-4 min-w-0">
-        <DailyTasksCard progress={dailyProgress} />
-
-        <div className="flex-1 bg-light-gray rounded-4xl p-4 md:p-8">
-          <CalendarView />
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="w-full lg:w-64">
+          <Sidebar
+            currentPoints={currentPoints}
+            activeView={activeView}
+            setActiveView={setActiveView}
+          />
         </div>
-      </div>
 
-      <div className="w-full lg:w-96 flex flex-col gap-4">
-        <CalendarView isCompact />
-        <TaskList />
+        {activeView === "calendar" && (
+          <>
+            <div className="flex-1 flex flex-col gap-4 min-w-0">
+              <div className="flex-1 bg-light-gray rounded-4xl p-4 md:p-8">
+                <CalendarView />
+              </div>
+            </div>
+
+            <div className="w-full lg:w-96 flex flex-col gap-4">
+              <CalendarView isCompact />
+              <TaskList />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

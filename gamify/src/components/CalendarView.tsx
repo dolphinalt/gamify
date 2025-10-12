@@ -5,7 +5,20 @@ interface CalendarViewProps {
 const CalendarView = ({ isCompact = false }: CalendarViewProps) => {
   const hours = isCompact
     ? []
-    : ["12am", "1am", "2am", "3am", "4am", "5am", "6am", "7am"];
+    : [
+        "12am",
+        "1am",
+        "2am",
+        "3am",
+        "4am",
+        "5am",
+        "6am",
+        "7am",
+        "8am",
+        "9am",
+        "10am",
+        "11am",
+      ];
 
   if (isCompact) {
     return (
