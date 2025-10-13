@@ -27,7 +27,7 @@ const App = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+      <div className="flex-1 flex flex-col gap-4 overflow-visible">
         {/* Daily Tasks Card */}
         <div className="flex-shrink-0">
           <DailyTasksCard progress={dailyProgress} />
@@ -46,10 +46,10 @@ const App = () => {
         )}
 
         {activeView === "dashboard" && (
-          <div className="flex-1 flex gap-4 min-h-0 overflow-hidden">
+          <div className="flex-1 flex gap-4 min-h-0 overflow-visible">
             {/* Tasks Grid */}
-            <div className="flex-[2] min-w-0 overflow-y-auto pr-2">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="flex-[2] min-w-0 pr-2 overflow-y-auto overflow-x-visible">
+              <div className="grid grid-cols-2 gap-6 p-4 pb-8">
                 <Card
                   type="task"
                   title="Assignment 1"
@@ -80,17 +80,49 @@ const App = () => {
                   description="This is the fifth assignment"
                   points={50}
                 />
+                <Card
+                  type="task"
+                  title="Assignment 6"
+                  description="This is the sixth assignment"
+                  points={50}
+                />
+                <Card
+                  type="task"
+                  title="Assignment 7"
+                  description="This is the seventh assignment"
+                  points={50}
+                />
+                <Card
+                  type="task"
+                  title="Assignment 8"
+                  description="This is the eighth assignment"
+                  points={50}
+                />
+                <Card
+                  type="task"
+                  title="Assignment 9"
+                  description="This is the ninth assignment"
+                  points={50}
+                />
+                <Card
+                  type="task"
+                  title="Assignment 10"
+                  description="This is the tenth assignment"
+                  points={50}
+                />
                 <Card type="new" />
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-2">
-                  <RewardCard points={50} active={currentPoints >= 50} />
-                  <RewardCard points={100} active={currentPoints >= 100} />
-                  <RewardCard points={200} active={currentPoints >= 200} />
-                  <RewardCard points={300} active={currentPoints >= 300} />
-                  <RewardCard points={500} active={currentPoints >= 500} />
-                  <RewardCard points={750} active={currentPoints >= 750} />
-                </div>
+            </div>
+
+            {/* Rewards Grid */}
+            <div className="flex-1 min-w-0 overflow-y-auto overflow-x-visible">
+              <div className="grid grid-cols-2 gap-6 p-4 pb-8">
+                <RewardCard points={50} active={currentPoints >= 50} />
+                <RewardCard points={100} active={currentPoints >= 100} />
+                <RewardCard points={200} active={currentPoints >= 200} />
+                <RewardCard points={300} active={currentPoints >= 300} />
+                <RewardCard points={500} active={currentPoints >= 500} />
+                <RewardCard points={750} active={currentPoints >= 750} />
               </div>
             </div>
           </div>
