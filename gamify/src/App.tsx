@@ -48,21 +48,22 @@ const App = () => {
             <div className="flex-1 flex gap-4 min-h-0">
               <div className="flex-[2] min-w-0">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-2">
-                  <Card title="Assignment 1" description="This is the first assignment" points={10} />
-                  <Card title="Assignment 2" description="This is the second assignment" points={20} />
-                  <Card title="Assignment 3" description="This is the third assignment" points={30} />
-                  <Card title="Assignment 3" description="This is the third assignment" points={30} />
-                  <Card title="Assignment 3" description="This is the third assignment" points={30} />
+                  <Card type="task" title="Assignment 1" description="This is the first assignment" points={10} />
+                  <Card type="task" title="Assignment 2" description="This is the second assignment" points={20} />
+                  <Card type="task" title="Assignment 3" description="This is the third assignment" points={30} />
+                  <Card type="task" title="Assignment 3" description="This is the third assignment" points={30} />
+                  <Card type="task" title="Assignment 3" description="This is the third assignment" points={30} />
+                  <Card type="new"/>
                 </div>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-2">
-                  <RewardCard title="Reward 1" description="Reward 1" points={100} />
-                  <RewardCard title="Reward 2" description="Reward 2" points={200} />
-                  <RewardCard title="Reward 3" description="Reward 3" points={300} /> 
-                  <RewardCard title="Reward 3" description="Reward 3" points={300} /> 
-                  <RewardCard title="Reward 3" description="Reward 3" points={300} /> 
-                  <RewardCard title="Reward 3" description="Reward 3" points={300} /> 
+                  <RewardCard points={50} active={currentPoints >= 50} />
+                  <RewardCard points={100} active={currentPoints >= 100} />
+                  <RewardCard points={200} active={currentPoints >= 200} />
+                  <RewardCard points={300} active={currentPoints >= 300} />
+                  <RewardCard points={500} active={currentPoints >= 500} />
+                  <RewardCard points={750} active={currentPoints >= 750} />
                 </div>
               </div>
             </div>
