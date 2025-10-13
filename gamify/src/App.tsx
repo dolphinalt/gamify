@@ -17,34 +17,30 @@ const App = () => {
   );
 
   return (
-    <div className="flex flex-col p-4 md:p-7 min-h-screen bg-white gap-4">
-      <DailyTasksCard progress={dailyProgress} />
-
-      <div className="flex flex-col lg:flex-row gap-4">
-        <div className="w-full lg:w-64">
+    <>
+      <div className="flex h-screen gap-4 p-4">
+        <div className="w-64 flex-shrink-0">
           <Sidebar
             currentPoints={currentPoints}
             activeView={activeView}
             setActiveView={setActiveView}
           />
         </div>
-
-        {activeView === "calendar" && (
-          <>
-            <div className="flex-1 flex flex-col gap-4 min-w-0">
-              <div className="flex-1 bg-light-gray rounded-4xl p-4 md:p-8">
+        <div className="flex-1 flex flex-col gap-4">
+          <DailyTasksCard progress={dailyProgress} />
+          <div className="bg-white rounded-xl p-4 h-16">
+            <div className="flex-1 grid grid-cols-2 gap-4">
+              <div className="bg-light-gray rounded-4xl p-4">
                 <CalendarView />
               </div>
+              <div className="bg-light-gray rounded-4xl p-4">
+                <TaskList />
+              </div>
             </div>
-
-            <div className="w-full lg:w-96 flex flex-col gap-4">
-              <CalendarView isCompact />
-              <TaskList />
-            </div>
-          </>
-        )}
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
