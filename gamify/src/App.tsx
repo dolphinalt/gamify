@@ -5,13 +5,13 @@ import CalendarView from "./components/CalendarView";
 import TaskList from "./components/TaskList";
 import Card from "./components/Card";
 import RewardCard from "./components/RewardCard";
+import NewTask from "./components/NewTask";
 
 const App = () => {
   const [currentPoints] = useState(250);
   const [dailyProgress] = useState(54);
-  const [activeView, setActiveView] = useState<"dashboard" | "calendar">(
-    "dashboard"
-  );
+  const [activeView, setActiveView] = useState<"dashboard" | "calendar">("dashboard");
+  const [popupActive] = useState<false | true>(true);
 
   return (
     <div className="flex h-screen bg-white gap-4 p-4">
@@ -80,23 +80,21 @@ const App = () => {
                 />
                 <Card type="new" />
               </div>
-            </div>
-
-            {/* Rewards Grid */}
-            <div className="flex-1 min-w-0 overflow-y-auto pl-2">
-              <div className="grid grid-cols-2 gap-4">
-                <RewardCard points={50} active={currentPoints >= 50} />
-                <RewardCard points={100} active={currentPoints >= 100} />
-                <RewardCard points={200} active={currentPoints >= 200} />
-                <RewardCard points={300} active={currentPoints >= 300} />
-                <RewardCard points={500} active={currentPoints >= 500} />
-                <RewardCard points={750} active={currentPoints >= 750} />
+              <div className="flex-1 min-w-0">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-2">
+                  <RewardCard points={50} active={currentPoints >= 50} />
+                  <RewardCard points={100} active={currentPoints >= 100} />
+                  <RewardCard points={200} active={currentPoints >= 200} />
+                  <RewardCard points={300} active={currentPoints >= 300} />
+                  <RewardCard points={500} active={currentPoints >= 500} />
+                  <RewardCard points={750} active={currentPoints >= 750} />
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

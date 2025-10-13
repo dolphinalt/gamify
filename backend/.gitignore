@@ -1,0 +1,14 @@
+# Python
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Database
+*.db
+*.sqlite3
+
+# Logs
+logs/
+*.log
