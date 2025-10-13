@@ -10,7 +10,9 @@ import NewTask from "./components/NewTask";
 const App = () => {
   const [currentPoints] = useState(250);
   const [dailyProgress] = useState(54);
-  const [activeView, setActiveView] = useState<"dashboard" | "calendar">("dashboard");
+  const [activeView, setActiveView] = useState<"dashboard" | "calendar">(
+    "dashboard"
+  );
   const [popupActive] = useState<false | true>(true);
 
   return (
@@ -91,10 +93,10 @@ const App = () => {
                 </div>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
-    </>
+    </div>
   );
 };
 
