@@ -9,8 +9,6 @@ import DailyTasksCard from "./components/DailyTasksCard";
 import CalendarView from "./components/CalendarView";
 import TaskList from "./components/TaskList";
 import Card from "./components/Card";
-import CardGrid from "./components/CardGrid";
-import RewardCardGrid from "./components/RewardCardGrid";
 import RewardCard from "./components/RewardCard";
 
 const App = () => {
