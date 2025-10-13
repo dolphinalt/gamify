@@ -10,13 +10,13 @@ import CalendarView from "./components/CalendarView";
 import TaskList from "./components/TaskList";
 import Card from "./components/Card";
 import RewardCard from "./components/RewardCard";
+import NewTask from "./components/NewTask";
 
 const App = () => {
   const [currentPoints] = useState(250);
   const [dailyProgress] = useState(54);
-  const [activeView, setActiveView] = useState<"dashboard" | "calendar">(
-    "dashboard"
-  );
+  const [activeView, setActiveView] = useState<"dashboard" | "calendar">("dashboard");
+  const [popupActive] = useState<false | true>(true);
 
   return (
     <>
@@ -66,6 +66,16 @@ const App = () => {
                   <RewardCard points={750} active={currentPoints >= 750} />
                 </div>
               </div>
+
+              {/* {popupActive && (
+                <>
+                  <div className="absolute inset-0 bg-dark-transparent-gray z-40 pointer-events-none"></div>
+                  <NewTask />
+                          <div className="absolute inset-0 z-50 flex items-center justify-center">
+
+
+                </>
+              )} */}
             </div>
           )}
         </div>
