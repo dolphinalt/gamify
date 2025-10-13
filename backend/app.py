@@ -4,9 +4,14 @@ from datetime import datetime, timezone
 import os
 
 def create_app():
-    app = Flask(__name__)
+    basedir = os.path.abspath(os.path.dirname(__file__))
 
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///calendar.db'
+    instance_path = os.path.join(basedir, 'instance')
+    os.makedirs(instance_path, exist_ok=True)
+    
+    app = Flask(__name__, instance_path=instance_path)
+
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(instance_path, "database.db")}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
