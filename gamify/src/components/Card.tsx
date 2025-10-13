@@ -9,7 +9,7 @@ const Card = ({ type, title, description, points }: CardProps) => {
   return (
     <>
     { type === "task" && (
-      <div className="flex flex-col gap-2 p-7 rounded-4xl bg-light-gray h-48">
+      <div className="flex flex-col gap-2 p-7 rounded-4xl bg-light-gray h-48 transition-all duration-300 hover:scale-102 hover:drop-shadow-xl cursor-pointer">
         <div>
           <div className="flex text-2xl font-bold text-left text-superdark-gray">
             {title}
@@ -23,7 +23,7 @@ const Card = ({ type, title, description, points }: CardProps) => {
       </div>
     )}
     { type === "new" && (
-      <div className="flex flex-col justify-center items-center gap-2 p-7 rounded-4xl bg-vapor-gray h-48 text-hollow-gray cursor-pointer">
+      <div className="flex flex-col justify-center items-center gap-2 p-7 rounded-4xl bg-vapor-gray h-48 text-hollow-gray cursor-pointer transition-all duration-300 hover:scale-102 hover:drop-shadow-xl">
         <div className="text-4xl font-bold">+</div>
         <div className="text-lg font-semibold">Add New Task</div>
       </div>
