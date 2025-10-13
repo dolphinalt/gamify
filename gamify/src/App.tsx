@@ -28,16 +28,18 @@ const App = () => {
         </div>
         <div className="flex-1 flex flex-col gap-4">
           <DailyTasksCard progress={dailyProgress} />
-          <div className="bg-white rounded-xl p-4 h-16">
-            <div className="flex-1 grid grid-cols-2 gap-4">
-              <div className="bg-light-gray rounded-4xl p-4">
-                <CalendarView />
-              </div>
-              <div className="bg-light-gray rounded-4xl p-4">
-                <TaskList />
+          {activeView === "calendar" && (
+            <div className="bg-white rounded-xl p-4 h-16">
+              <div className="flex-1 grid grid-cols-2 gap-4">
+                <div className="bg-light-gray rounded-4xl p-4">
+                  <CalendarView />
+                </div>
+                <div className="bg-light-gray rounded-4xl p-4">
+                  <TaskList />
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </>
