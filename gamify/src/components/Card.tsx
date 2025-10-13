@@ -18,7 +18,7 @@ const Card = ({ type, title, description, points }: CardProps) => {
             {points}
           </div>
         </div>
-        <hr className="w-full h-1 bg-gradient-to-r from-mango-orange to-strawberry-red border-0 font-extralight"></hr>
+        <hr className="w-full h-2 rounded-full bg-gradient-to-r from-mango-orange to-strawberry-red border-0 font-extralight"></hr>
         <div className="text-dark-gray">{description}</div>
       </div>
     )}

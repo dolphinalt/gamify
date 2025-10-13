@@ -15,7 +15,7 @@ const DailyTasksCard = ({ progress }: DailyTasksCardProps) => {
       <div className="flex items-center gap-3 md:gap-4">
         <div className="flex-1 h-3 md:h-4 bg-gray rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-mango-orange to-strawberry-red transition-all duration-300"
+            className="h-full rounded-full bg-gradient-to-r from-mango-orange to-strawberry-red transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
