@@ -14,11 +14,11 @@ const Card = ({ type, title, description, points }: CardProps) => {
           <div className="flex text-2xl font-bold text-left text-superdark-gray">
             {title}
           </div>
-          <div className="flex italic text-left superdark-gray-500">
+          <div className="flex italic text-left superdark-gray-500 font-extralight">
             {points}
           </div>
         </div>
-        <hr className="w-full h-1 bg-gradient-to-r from-mango-orange to-strawberry-red border-0"></hr>
+        <hr className="w-full h-1 bg-gradient-to-r from-mango-orange to-strawberry-red border-0 font-extralight"></hr>
         <div className="text-dark-gray">{description}</div>
       </div>
     )}
