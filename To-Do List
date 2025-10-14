@@ -1,4 +1,4 @@
 Implement addition of events in the calender - Isaac
 Make the interactive calender - Isaac
-Fix the alignment for the UI - Isaac
 Implement creation of new tasks (essentially dynamic instead of static dashboard) - Ethan
+Dropdown for category and rewards need to be able to scale to window
