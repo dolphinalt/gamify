@@ -30,9 +30,9 @@ const App = () => {
 
   return (
     <body className="overscroll-none">
-      <div className="flex h-screen bg-white gap-4 p-4">
+      <div className="flex h-screen bg-white gap-2 md:gap-3 lg:gap-4 p-2 md:p-3 lg:p-4">
         {/* Sidebar */}
-        <div className="w-64 flex-shrink-0">
+        <div className="w-48 sm:w-56 md:w-64 flex-shrink-0">
           <Sidebar
             currentPoints={currentPoints}
             activeView={activeView}
@@ -43,7 +43,7 @@ const App = () => {
         {/* Main Content */}
         <div className="flex-1 flex flex-col gap-4 overflow-hidden">
           {/* Daily Tasks Card */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 px-2 md:px-0">
             <DailyTasksCard progress={dailyProgress} />
           </div>
 
@@ -54,7 +54,7 @@ const App = () => {
             }`}
           >
             {activeView === "calendar" && (
-              <div className="flex-1 flex gap-4 min-h-0">
+              <div className="flex-1 flex gap-2 md:gap-3 lg:gap-4 min-h-0">
                 <div className="flex-1 min-w-0">
                   <CalendarView />
                 </div>
@@ -66,7 +66,7 @@ const App = () => {
 
             {activeView === "dashboard" && (
               <>
-                <div className="flex gap-4 mb-4 flex-shrink-0">
+                <div className="flex gap-2 md:gap-3 lg:gap-4 mb-2 md:mb-3 lg:mb-4 flex-shrink-0">
                   <div className="flex-[2] min-w-0 pr-2">
                     <CategorySelection />
                   </div>
@@ -76,8 +76,8 @@ const App = () => {
                 </div>
                 <div className="flex-1 flex gap-4 min-h-0 overflow-hidden">
                   {/* Tasks Grid */}
-                  <div className="flex-[2] min-w-0 pr-2 overflow-y-auto overflow-x-visible">
-                    <div className="grid grid-cols-2 gap-6 p-4 pb-8">
+                  <div className="flex-[2] min-w-0 pr-1 md:pr-2 overflow-y-auto overflow-x-visible">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 lg:gap-6 p-2 md:p-3 lg:p-4 pb-6 md:pb-8">
                       <Card
                         type="task"
                         title="Assignment 1"
@@ -143,8 +143,8 @@ const App = () => {
                   </div>
 
                   {/* Rewards Grid */}
-                  <div className="flex-1 min-w-0">
-                    <div className="grid grid-cols-2 gap-6 p-4 pb-8">
+                  <div className="flex-1 min-w-0 hidden md:flex md:flex-col">
+                    <div className="grid grid-cols-2 gap-3 md:gap-4 lg:gap-6 p-2 md:p-3 lg:p-4 pb-6 md:pb-8">
                       <RewardCard points={50} active={currentPoints >= 50} />
                       <RewardCard points={100} active={currentPoints >= 100} />
                       <RewardCard points={200} active={currentPoints >= 200} />
