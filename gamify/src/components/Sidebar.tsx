@@ -57,12 +57,20 @@ const Sidebar = ({
 
       <div className="flex-1 flex flex-col justify-evenly">
         {/* Navigation */}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 relative">
+          <div
+            className={`absolute bg-gradient-to-r from-mango-orange to-strawberry-red rounded-4xl transition-all duration-300 ease-in-out ${
+              activeView === "dashboard"
+                ? "top-0 h-[42px] md:h-[50px]"
+                : "top-[50px] md:top-[58px] h-[46px] md:h-[54px]"
+            } left-0 right-0 z-0`}
+          />
+
           <button
             onClick={() => setActiveView("dashboard")}
-            className={`text-center px-4 md:px-6 py-2 md:py-3 font-bold rounded-4xl ${
+            className={`relative z-10 text-center px-4 md:px-6 py-2 md:py-3 font-bold rounded-4xl transition-colors duration-300 ${
               activeView === "dashboard"
-                ? "bg-gradient-to-r from-mango-orange to-strawberry-red text-white font-bold"
+                ? "text-white font-bold"
                 : "text-superdark-gray"
             }`}
           >
@@ -70,10 +78,8 @@ const Sidebar = ({
           </button>
           <button
             onClick={() => setActiveView("calendar")}
-            className={`text-center px-4 md:px-6 py-3 md:py-4 font-bold rounded-4xl ${
-              activeView === "calendar"
-                ? "bg-gradient-to-r from-mango-orange to-strawberry-red text-white"
-                : "text-superdark-gray"
+            className={`relative z-10 text-center px-4 md:px-6 py-3 md:py-4 font-bold rounded-4xl transition-colors duration-300 ${
+              activeView === "calendar" ? "text-white" : "text-superdark-gray"
             }`}
           >
             Calendar

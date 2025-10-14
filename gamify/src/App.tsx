@@ -24,7 +24,7 @@ const App = () => {
       setTimeout(() => {
         setActiveView(newView);
         setIsTransitioning(false);
-      }, 200);
+      }, 150);
     }
   };
 
@@ -41,7 +41,7 @@ const App = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col gap-4 overflow-visible">
+        <div className="flex-1 flex flex-col gap-4 overflow-hidden">
           {/* Daily Tasks Card */}
           <div className="flex-shrink-0">
             <DailyTasksCard progress={dailyProgress} />
@@ -49,7 +49,7 @@ const App = () => {
 
           {/* Content Area */}
           <div
-            className={`flex-1 transition-opacity duration-300 ${
+            className={`flex-1 flex flex-col transition-opacity duration-300 overflow-hidden ${
               isTransitioning ? "opacity-0" : "opacity-100"
             }`}
           >
@@ -66,7 +66,7 @@ const App = () => {
 
             {activeView === "dashboard" && (
               <>
-                <div className="flex gap-4 mb-4">
+                <div className="flex gap-4 mb-4 flex-shrink-0">
                   <div className="flex-[2] min-w-0 pr-2">
                     <CategorySelection />
                   </div>
@@ -74,7 +74,7 @@ const App = () => {
                     <Header />
                   </div>
                 </div>
-                <div className="flex-1 flex gap-4 min-h-0 overflow-visible">
+                <div className="flex-1 flex gap-4 min-h-0 overflow-hidden">
                   {/* Tasks Grid */}
                   <div className="flex-[2] min-w-0 pr-2 overflow-y-auto overflow-x-visible">
                     <div className="grid grid-cols-2 gap-6 p-4 pb-8">
@@ -143,7 +143,7 @@ const App = () => {
                   </div>
 
                   {/* Rewards Grid */}
-                  <div className="flex-1 min-w-0 overflow-y-auto overflow-x-visible">
+                  <div className="flex-1 min-w-0">
                     <div className="grid grid-cols-2 gap-6 p-4 pb-8">
                       <RewardCard points={50} active={currentPoints >= 50} />
                       <RewardCard points={100} active={currentPoints >= 100} />
