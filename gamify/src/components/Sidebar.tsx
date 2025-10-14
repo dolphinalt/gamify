@@ -99,10 +99,10 @@ const Sidebar = ({
               start
             </button>
             <button
-              onClick={() => setIsRunning(false)}
+              onClick={() => isRunning ? setIsRunning(false) : setTime(0)}
               className="px-5 md:px-6 py-2 bg-gray rounded-2xl text-white font-medium text-sm md:text-base transition-all duration-300 hover:scale-102 hover:drop-shadow-md cursor-pointer"
             >
-              stop
+              {isRunning ? "stop" : "reset"}
             </button>
           </div>
         </div>
