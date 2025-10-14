@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_cors import CORS
+from flasgger import Swagger
 from datetime import datetime, timezone
 import os
 
@@ -14,6 +15,35 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(instance_path, "database.db")}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+    # Swagger Configuration
+    swagger_config = {
+        "headers": [],
+        "specs": [
+            {
+                "endpoint": 'apispec',
+                "route": '/apispec.json',
+                "rule_filter": lambda rule: True,
+                "model_filter": lambda tag: True,
+            }
+        ],
+        "static_url_path": "/flasgger_static",
+        "swagger_ui": True,
+        "specs_route": "/api/docs"
+    }
+
+    swagger_template = {
+        "swagger": "2.0",
+        "info": {
+            "title": "Gamify API",
+            "description": "API for managing events and tasks in a gamified calendar application",
+            "version": "1.0.0"
+        },
+        "basePath": "/api",
+        "schemes": ["http"],
+    }
+
+    Swagger(app, config=swagger_config, template=swagger_template)
 
     CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
 

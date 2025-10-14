@@ -25,14 +25,51 @@ def parse_datetime(date_string: str) -> datetime:
 def get_events():
     """
     Get all events, optionally filtered by date range
-
-    Query Parameters:
-        start (str): ISO 8601 formatted start time to filter events (optional).
-        end (str): ISO 8601 formatted end time to filter events (optional).
-
-    Returns:
-        Response: JSON array of events with HTTP status 200.
-        Response: Error message with HTTP status 400 if date format is invalid or date range is invalid.
+    ---
+    tags:
+      - Events
+    parameters:
+      - name: start
+        in: query
+        type: string
+        required: false
+        description: ISO 8601 formatted start time to filter events (e.g., 2025-10-13T00:00:00)
+      - name: end
+        in: query
+        type: string
+        required: false
+        description: ISO 8601 formatted end time to filter events (e.g., 2025-10-14T23:59:59)
+    responses:
+      200:
+        description: List of events
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              title:
+                type: string
+              description:
+                type: string
+              start_time:
+                type: string
+                format: date-time
+              end_time:
+                type: string
+                format: date-time
+              location:
+                type: string
+              all_day:
+                type: boolean
+      400:
+        description: Invalid date format or date range
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
     """
 
     start = request.args.get('start')
@@ -64,14 +101,39 @@ def get_events():
 def get_event(event_id):
     """
     Get a single event by ID
-
-    Path Parameters:
-        event_id (int): ID of the event to retrieve.
-
-    Returns:
-        Response: JSON object of the event with HTTP status 200.
-        Response: Error message with HTTP status 404 if event not found.
-        Response: Error message with HTTP status 500 for server errors.
+    ---
+    tags:
+      - Events
+    parameters:
+      - name: event_id
+        in: path
+        type: integer
+        required: true
+        description: ID of the event to retrieve
+    responses:
+      200:
+        description: Event details
+        schema:
+          type: object
+          properties:
+            id:
+              type: integer
+            title:
+              type: string
+            description:
+              type: string
+            start_time:
+              type: string
+              format: date-time
+            end_time:
+              type: string
+              format: date-time
+            location:
+              type: string
+            all_day:
+              type: boolean
+      404:
+        description: Event not found
     """
 
     event = db.get_or_404(Event, event_id)
@@ -82,19 +144,82 @@ def get_event(event_id):
 def create_event():
     """
     Create a new event
-
-    Request Body (JSON):
-        title (str): Title of the event (required).
-        description (str): Description of the event (optional).
-        start_time (str): ISO 8601 formatted start time of the event (required).
-        end_time (str): ISO 8601 formatted end time of the event (required).
-        location (str): Location of the event (optional).
-        all_day (bool): Whether the event lasts all day (optional, default: False).
-
-    Returns:
-        Response: JSON object of the created event with HTTP status 201.
-        Response: Error message with HTTP status 400 if required fields are missing.
-        Response: Error message with HTTP status 500 for server errors.
+    ---
+    tags:
+      - Events
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required:
+            - title
+            - start_time
+            - end_time
+          properties:
+            title:
+              type: string
+              description: Title of the event
+              example: "Team Meeting"
+            description:
+              type: string
+              description: Description of the event
+              example: "Weekly team sync"
+            start_time:
+              type: string
+              format: date-time
+              description: ISO 8601 formatted start time
+              example: "2025-10-13T10:00:00"
+            end_time:
+              type: string
+              format: date-time
+              description: ISO 8601 formatted end time
+              example: "2025-10-13T11:00:00"
+            location:
+              type: string
+              description: Location of the event
+              example: "Conference Room A"
+            all_day:
+              type: boolean
+              description: Whether the event lasts all day
+              default: false
+    responses:
+      201:
+        description: Event created successfully
+        schema:
+          type: object
+          properties:
+            id:
+              type: integer
+            title:
+              type: string
+            description:
+              type: string
+            start_time:
+              type: string
+              format: date-time
+            end_time:
+              type: string
+              format: date-time
+            location:
+              type: string
+            all_day:
+              type: boolean
+      400:
+        description: Invalid input or validation error
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+      500:
+        description: Server error
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
     """
 
     data = request.get_json()
@@ -141,29 +266,84 @@ def create_event():
 def update_event(event_id):
     """
     Update an existing event
-
-    Path Parameters:
-        event_id (int): ID of the event to update.
-
-    Request Body (JSON):
-        title (str): Updated title of the event (optional); cannot be empty if provided.
-        start_time (str): Updated ISO 8601 formatted start time of the event (optional); cannot be empty if provided.
-        end_time (str): Updated ISO 8601 formatted end time of the event (optional); cannot be empty if provided.
-        description (str): Updated description of the event (optional); if empty, sets to None.
-        location (str): Updated location of the event (optional), cannot be empty if provided; if empty, sets to None.
-        all_day (bool): Updated all-day status of the event (optional).
-
-    Returns:
-        Response: JSON object of the updated event with HTTP status 200.
-        Response: Error message with HTTP status 400 if:
-            - Title is provided and empty
-            - Date format is invalid
-            - End time is before start time
-            - New start time is after existing end time
-            - New end time is before existing start time
-            - all_day field is not a boolean
-        Response: Error message with HTTP status 404 if event is not found.
-        Response: Error message with HTTP status 500 for server errors.
+    ---
+    tags:
+      - Events
+    parameters:
+      - name: event_id
+        in: path
+        type: integer
+        required: true
+        description: ID of the event to update
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            title:
+              type: string
+              description: Updated title of the event
+              example: "Team Meeting (Updated)"
+            description:
+              type: string
+              description: Updated description of the event (empty string sets to None)
+              example: "Weekly team sync - updated agenda"
+            start_time:
+              type: string
+              format: date-time
+              description: Updated ISO 8601 formatted start time
+              example: "2025-10-13T14:00:00"
+            end_time:
+              type: string
+              format: date-time
+              description: Updated ISO 8601 formatted end time
+              example: "2025-10-13T15:00:00"
+            location:
+              type: string
+              description: Updated location (empty string sets to None)
+              example: "Conference Room B"
+            all_day:
+              type: boolean
+              description: Updated all-day status
+    responses:
+      200:
+        description: Event updated successfully
+        schema:
+          type: object
+          properties:
+            id:
+              type: integer
+            title:
+              type: string
+            description:
+              type: string
+            start_time:
+              type: string
+              format: date-time
+            end_time:
+              type: string
+              format: date-time
+            location:
+              type: string
+            all_day:
+              type: boolean
+      400:
+        description: Invalid input or validation error
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+      404:
+        description: Event not found
+      500:
+        description: Server error
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
     """
 
     event = db.get_or_404(Event, event_id)
@@ -241,14 +421,27 @@ def update_event(event_id):
 def delete_event(event_id):
     """
     Delete an event
-
-    Path Parameters:
-        event_id (int): ID of the event to delete.
-
-    Returns:
-        Response: Empty response with HTTP status 204 if deletion is successful.
-        Response: Error message with HTTP status 404 if event not found.
-        Response: Error message with HTTP status 500 for server errors.
+    ---
+    tags:
+      - Events
+    parameters:
+      - name: event_id
+        in: path
+        type: integer
+        required: true
+        description: ID of the event to delete
+    responses:
+      204:
+        description: Event deleted successfully
+      404:
+        description: Event not found
+      500:
+        description: Server error
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
     """
 
     event = db.get_or_404(Event, event_id)
@@ -269,14 +462,50 @@ def delete_event(event_id):
 def get_tasks():
     """
     Get all tasks, optionally filtered by due date range
-
-    Query Parameters:
-        start_date (str): ISO 8601 formatted start date to filter tasks (optional).
-        end_date (str): ISO 8601 formatted end date to filter tasks (optional).
-
-    Returns:
-        Response: JSON array of tasks with HTTP status 200.
-        Response: Error message with HTTP status 400 if date format is invalid or date range is invalid.
+    ---
+    tags:
+      - Tasks
+    parameters:
+      - name: start
+        in: query
+        type: string
+        required: false
+        description: ISO 8601 formatted start date to filter tasks
+      - name: end
+        in: query
+        type: string
+        required: false
+        description: ISO 8601 formatted end date to filter tasks
+    responses:
+      200:
+        description: List of tasks
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              title:
+                type: string
+              description:
+                type: string
+              due_datetime:
+                type: string
+                format: date-time
+              completed:
+                type: boolean
+              priority:
+                type: string
+              category:
+                type: string
+      400:
+        description: Invalid date format or date range
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
     """
 
 
@@ -312,14 +541,42 @@ def get_tasks():
 def get_task(task_id):
     """
     Get a single task by ID
-
-    Path Parameters:
-        task_id (int): ID of the task to retrieve.
-
-    Returns:
-        Response: JSON object of the task with HTTP status 200.
-        Response: Error message with HTTP status 404 if task not found.
-        Response: Error message with HTTP status 500 for server errors.
+    ---
+    tags:
+      - Tasks
+    parameters:
+      - name: task_id
+        in: path
+        type: integer
+        required: true
+        description: ID of the task to retrieve
+    responses:
+      200:
+        description: Task details
+        schema:
+          type: object
+          properties:
+            id:
+              type: integer
+            title:
+              type: string
+            description:
+              type: string
+            due_datetime:
+              type: string
+              format: date-time
+            completed:
+              type: boolean
+            priority:
+              type: string
+            category:
+              type: string
+            location:
+              type: string
+            link:
+              type: string
+      404:
+        description: Task not found
     """
 
     task = db.get_or_404(Task, task_id)
@@ -330,18 +587,79 @@ def get_task(task_id):
 def create_task():
     """
     Create a new task
-
-    Request Body (JSON):
-        title (str): Title of the task (required).
-        description (str): Description of the task (required).
-        location (str): Location of the task (optional).
-        due_datetime (str): ISO 8601 formatted due date/time of the task (optional).
-        link (str): Related link for the task (optional).
-
-    Returns:
-        Response: JSON object of the created task with HTTP status 201.
-        Response: Error message with HTTP status 400 if required fields are missing.
-        Response: Error message with HTTP status 500 for server errors.
+    ---
+    tags:
+      - Tasks
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required:
+            - title
+            - description
+          properties:
+            title:
+              type: string
+              description: Title of the task
+              example: "Complete project proposal"
+            description:
+              type: string
+              description: Description of the task
+              example: "Finish the Q4 project proposal document"
+            location:
+              type: string
+              description: Location of the task
+              example: "Office"
+            due_datetime:
+              type: string
+              format: date-time
+              description: ISO 8601 formatted due date/time
+              example: "2025-10-20T17:00:00"
+            link:
+              type: string
+              description: Related link for the task
+              example: "https://docs.example.com/proposal"
+    responses:
+      201:
+        description: Task created successfully
+        schema:
+          type: object
+          properties:
+            id:
+              type: integer
+            title:
+              type: string
+            description:
+              type: string
+            due_datetime:
+              type: string
+              format: date-time
+            completed:
+              type: boolean
+            priority:
+              type: string
+            category:
+              type: string
+            location:
+              type: string
+            link:
+              type: string
+      400:
+        description: Invalid input or validation error
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+      500:
+        description: Server error
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
     """
 
     data = request.get_json()
@@ -384,24 +702,83 @@ def create_task():
 def update_task(task_id):
     """
     Update an existing task
-
-    Path Parameters:
-        task_id (int): ID of the task to update.
-
-    Request Body (JSON):
-        title (str): Updated title of the task (optional); cannot be empty if provided.
-        description (str): Updated description of the task (optional); cannot be empty if provided.
-        location (str): Updated location of the task (optional); if empty, sets to None.
-        due_datetime (str): Updated ISO 8601 formatted due date/time of the task (optional); if empty, sets to None.
-        link (str): Updated link for the task (optional); if empty, sets to None.
-
-    Returns:
-        Response: JSON object of the updated task with HTTP status 200.
-        Response: Error message with HTTP status 400 if:
-            - Title is provided and empty
-            - Date format is invalid
-        Response: Error message with HTTP status 404 if task is not found.
-        Response: Error message with HTTP status 500 for server errors.
+    ---
+    tags:
+      - Tasks
+    parameters:
+      - name: task_id
+        in: path
+        type: integer
+        required: true
+        description: ID of the task to update
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            title:
+              type: string
+              description: Updated title of the task
+              example: "Complete project proposal (Updated)"
+            description:
+              type: string
+              description: Updated description of the task
+              example: "Finish and submit the Q4 project proposal"
+            location:
+              type: string
+              description: Updated location (empty string sets to None)
+              example: "Home Office"
+            due_datetime:
+              type: string
+              format: date-time
+              description: Updated ISO 8601 formatted due date/time (empty string sets to None)
+              example: "2025-10-21T17:00:00"
+            link:
+              type: string
+              description: Updated link (empty string sets to None)
+              example: "https://docs.example.com/updated-proposal"
+    responses:
+      200:
+        description: Task updated successfully
+        schema:
+          type: object
+          properties:
+            id:
+              type: integer
+            title:
+              type: string
+            description:
+              type: string
+            due_datetime:
+              type: string
+              format: date-time
+            completed:
+              type: boolean
+            priority:
+              type: string
+            category:
+              type: string
+            location:
+              type: string
+            link:
+              type: string
+      400:
+        description: Invalid input or validation error
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+      404:
+        description: Task not found
+      500:
+        description: Server error
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
     """
 
     task = db.get_or_404(Task, task_id)
@@ -459,14 +836,27 @@ def update_task(task_id):
 def delete_task(task_id):
     """
     Delete a task
-
-    Path Parameters:
-        task_id (int): ID of the task to delete.
-
-    Returns:
-        Response: Empty response with HTTP status 204 if deletion is successful.
-        Response: Error message with HTTP status 404 if task not found.
-        Response: Error message with HTTP status 500 for server errors.
+    ---
+    tags:
+      - Tasks
+    parameters:
+      - name: task_id
+        in: path
+        type: integer
+        required: true
+        description: ID of the task to delete
+    responses:
+      204:
+        description: Task deleted successfully
+      404:
+        description: Task not found
+      500:
+        description: Server error
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
     """
 
     task = db.get_or_404(Task, task_id)
