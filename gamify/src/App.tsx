@@ -2,6 +2,7 @@ import { useState } from "react";
 import Sidebar from "./components/Sidebar";
 import DailyTasksCard from "./components/DailyTasksCard";
 import CalendarView from "./components/CalendarView";
+import Calendar from "./components/Calendar";
 import TaskList from "./components/TaskList";
 import Card from "./components/Card";
 import RewardCard from "./components/RewardCard";
@@ -49,23 +50,31 @@ const App = () => {
 
           {/* Content Area */}
           <div
-            className={`flex-1 flex flex-col transition-opacity duration-300 overflow-hidden ${
+            className={`flex-1 flex transition-opacity duration-300 overflow-hidden gap-2 md:gap-3 lg:gap-4 ${
               isTransitioning ? "opacity-0" : "opacity-100"
             }`}
           >
             {activeView === "calendar" && (
-              <div className="flex-1 flex gap-2 md:gap-3 lg:gap-4 min-h-0">
-                <div className="flex-1 min-w-0">
+              <>
+                {/* Left Column - CalendarView */}
+                <div className="flex-[1.4] min-w-0">
                   <CalendarView />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <TaskList />
+
+                {/* Right Column - Calendar and TaskList stacked */}
+                <div className="flex-1 min-w-0 flex flex-col gap-2 md:gap-3 lg:gap-4">
+                  <div className="flex-[1.5] min-h-0">
+                    <Calendar />
+                  </div>
+                  <div className="flex-[1] min-w-0">
+                    <TaskList />
+                  </div>
                 </div>
-              </div>
+              </>
             )}
 
             {activeView === "dashboard" && (
-              <>
+              <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="flex gap-2 md:gap-3 lg:gap-4 mb-2 md:mb-3 lg:mb-4 flex-shrink-0">
                   <div className="flex-[2] min-w-0 pr-2">
                     <CategorySelection />
@@ -154,7 +163,7 @@ const App = () => {
                     </div>
                   </div>
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>

@@ -2,7 +2,6 @@ const TaskList = () => {
   const tasks = [
     { name: "I&C 6B: ZyBook", duration: "60m" },
     { name: "I&C 6B: Reading Quiz", duration: "30m" },
-    { name: "I&C 6B: ICA", duration: "90m" },
   ];
 
   return (
