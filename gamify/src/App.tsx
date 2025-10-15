@@ -74,7 +74,7 @@ const App = () => {
             )}
 
             {activeView === "dashboard" && (
-              <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex-1 flex flex-col">
                 <div className="flex gap-2 md:gap-3 lg:gap-4 mb-2 md:mb-3 lg:mb-4 flex-shrink-0">
                   <div className="flex-[2] min-w-0 pr-2">
                     <CategorySelection />
