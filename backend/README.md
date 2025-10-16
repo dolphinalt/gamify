@@ -45,11 +45,14 @@ This project follows the **Application Factory Pattern**, which provides:
 
 #### `models.py` - Database Models
 - `Event`: Calendar events with start/end times, locations, descriptions
+- `RecurrenceRule`: Recurrence patterns for recurring events (based on iCalendar RFC 5545)
 - `Task`: Tasks with due dates, descriptions, and links
 - Hybrid properties for proper timezone handling (UTC storage)
+- Relationship between Event and RecurrenceRule for recurring event support
 
 #### `routes.py` - API Routes
-- `/api/events`: CRUD operations for events
+- `/api/events`: CRUD operations for events with recurring event support
+- `/api/recurrence-rules`: Operations for managing recurrence rules
 - `/api/tasks`: CRUD operations for tasks
 - Full Swagger documentation for all endpoints
 
@@ -106,9 +109,18 @@ Once the server is running, visit:
 
 ### Events API
 - Create, read, update, and delete calendar events
+- **Recurring Events**: Support for daily, weekly, monthly, and yearly recurring events
+  - Flexible recurrence patterns (specific days of week, days of month, etc.)
+  - End dates or occurrence counts
+  - Automatic instance generation for date ranges
 - Filter events by date range
 - Support for all-day events
 - Automatic timezone handling (UTC)
+
+### Recurrence Rules API
+- View all recurrence rules
+- View individual recurrence rule details
+- Delete recurrence rules (cascades to associated events)
 
 ### Tasks API
 - Create, read, update, and delete tasks
@@ -122,6 +134,38 @@ Once the server is running, visit:
 - **Input Validation**: Comprehensive validation for all inputs
 - **Swagger Documentation**: Interactive API documentation
 - **Timezone Handling**: Proper UTC storage and conversion
+
+## Recurring Events
+
+The API supports recurring events using the iCalendar RFC 5545 recurrence rule specification. For detailed information about implementing and using recurring events, see [RECURRING_EVENTS.md](RECURRING_EVENTS.md).
+
+### Quick Example
+
+Create a recurring event (e.g., lecture every Tuesday and Thursday):
+
+```bash
+curl -X POST http://localhost:5000/api/events \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "CS 101 Lecture",
+    "start_time": "2025-10-15T09:00:00",
+    "end_time": "2025-10-15T10:30:00",
+    "location": "Room 202",
+    "recurrence": {
+      "freq": "WEEKLY",
+      "byday": "TU,TH",
+      "until": "2025-12-15T23:59:59"
+    }
+  }'
+```
+
+Get events with recurring instances expanded:
+
+```bash
+curl "http://localhost:5000/api/events?start=2025-10-15T00:00:00&end=2025-10-20T23:59:59"
+```
+
+This will return individual instances for each Tuesday and Thursday within the date range.
 
 ## Development
 

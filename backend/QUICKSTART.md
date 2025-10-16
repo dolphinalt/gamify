@@ -45,9 +45,21 @@ curl -X POST http://localhost:5000/api/events ^
   -d "{\"title\":\"Team Meeting\",\"start_time\":\"2025-10-15T10:00:00\",\"end_time\":\"2025-10-15T11:00:00\"}"
 ```
 
+### Test Creating a Recurring Event
+```bash
+curl -X POST http://localhost:5000/api/events ^
+  -H "Content-Type: application/json" ^
+  -d "{\"title\":\"Weekly Standup\",\"start_time\":\"2025-10-15T09:00:00\",\"end_time\":\"2025-10-15T09:30:00\",\"recurrence\":{\"freq\":\"WEEKLY\",\"byday\":\"MO,WE,FR\",\"until\":\"2025-12-31T23:59:59\"}}"
+```
+
 ### Get All Events
 ```bash
 curl http://localhost:5000/api/events
+```
+
+### Get Events in a Date Range (expands recurring events)
+```bash
+curl "http://localhost:5000/api/events?start=2025-10-15T00:00:00&end=2025-10-20T23:59:59"
 ```
 
 ## 🏗️ Application Factory Pattern
@@ -60,9 +72,10 @@ backend/
 ├── app.py              # Application factory & initialization
 ├── config.py           # Environment-based configuration
 ├── extensions.py       # Flask extensions (SQLAlchemy, CORS)
-├── models.py           # Database models (Event, Task)
+├── models.py           # Database models (Event, RecurrenceRule, Task)
 ├── routes.py           # API endpoints
 ├── requirements.txt    # Python dependencies
+├── RECURRING_EVENTS.md # Recurring events documentation
 └── instance/          # Database & instance files (auto-created)
 ```
 
@@ -117,11 +130,16 @@ python app.py
 ## 📚 API Endpoints
 
 ### Events
-- `GET /api/events` - Get all events (with optional date filtering)
+- `GET /api/events` - Get all events (with optional date filtering, auto-expands recurring events)
 - `GET /api/events/<id>` - Get specific event
-- `POST /api/events` - Create new event
-- `PUT /api/events/<id>` - Update event
+- `POST /api/events` - Create new event (supports recurrence)
+- `PUT /api/events/<id>` - Update event (can add/update/remove recurrence)
 - `DELETE /api/events/<id>` - Delete event
+
+### Recurrence Rules
+- `GET /api/recurrence-rules` - Get all recurrence rules
+- `GET /api/recurrence-rules/<id>` - Get specific recurrence rule
+- `DELETE /api/recurrence-rules/<id>` - Delete recurrence rule (cascades to events)
 
 ### Tasks
 - `GET /api/tasks` - Get all tasks (with optional date filtering)
@@ -131,6 +149,58 @@ python app.py
 - `DELETE /api/tasks/<id>` - Delete task
 
 **Full documentation with examples:** http://localhost:5000/api/docs
+
+### Recurring Events Examples
+
+**Create weekly lecture (every Tuesday and Thursday):**
+```json
+POST /api/events
+{
+  "title": "CS 101 Lecture",
+  "start_time": "2025-10-15T09:00:00",
+  "end_time": "2025-10-15T10:30:00",
+  "recurrence": {
+    "freq": "WEEKLY",
+    "byday": "TU,TH",
+    "until": "2025-12-15T23:59:59"
+  }
+}
+```
+
+**Create daily standup (10 occurrences):**
+```json
+POST /api/events
+{
+  "title": "Daily Standup",
+  "start_time": "2025-10-15T09:00:00",
+  "end_time": "2025-10-15T09:15:00",
+  "recurrence": {
+    "freq": "DAILY",
+    "count": 10
+  }
+}
+```
+
+**Update event to add recurrence:**
+```json
+PUT /api/events/123
+{
+  "recurrence": {
+    "freq": "WEEKLY",
+    "byday": "MO,WE,FR"
+  }
+}
+```
+
+**Update event to remove recurrence:**
+```json
+PUT /api/events/123
+{
+  "recurrence": null
+}
+```
+
+For more details, see [RECURRING_EVENTS.md](RECURRING_EVENTS.md)
 
 ## 🔧 Troubleshooting
 
@@ -208,6 +278,7 @@ with test_app.app_context():
 
 ## 📖 Additional Resources
 
+- **Recurring Events Guide**: `backend/RECURRING_EVENTS.md` - Comprehensive recurring events documentation
 - **Main README**: `backend/README.md` - Detailed architecture documentation
 - **Swagger Docs**: http://localhost:5000/api/docs - Interactive API testing
 - **Flask Docs**: https://flask.palletsprojects.com/

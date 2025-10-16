@@ -1,7 +1,8 @@
 from flask import Blueprint, request, jsonify
 from extensions import db
-from models import Event, Task
-from datetime import datetime, timezone
+from models import Event, Task, RecurrenceRule
+from datetime import datetime, timezone, timedelta
+from sqlalchemy import or_, and_
 
 api_bp = Blueprint('api', __name__)
 
@@ -24,7 +25,8 @@ def parse_datetime(date_string: str) -> datetime:
 @api_bp.route('/events', methods=['GET'])
 def get_events():
     """
-    Get all events, optionally filtered by date range
+    Get all events, optionally filtered by date range.
+    Expands recurring events into individual instances within the date range.
     ---
     tags:
       - Events
@@ -39,6 +41,12 @@ def get_events():
         type: string
         required: false
         description: ISO 8601 formatted end time to filter events (e.g., 2025-10-14T23:59:59)
+      - name: expand_recurring
+        in: query
+        type: boolean
+        required: false
+        default: true
+        description: Whether to expand recurring events into instances (default true)
     responses:
       200:
         description: List of events
@@ -63,6 +71,10 @@ def get_events():
                 type: string
               all_day:
                 type: boolean
+              is_recurring_instance:
+                type: boolean
+              recurrence_rule:
+                type: object
       400:
         description: Invalid date format or date range
         schema:
@@ -74,6 +86,7 @@ def get_events():
 
     start = request.args.get('start')
     end = request.args.get('end')
+    expand_recurring = request.args.get('expand_recurring', 'true').lower() != 'false'
 
     stmt = db.select(Event)
     start_dt = None
@@ -82,19 +95,104 @@ def get_events():
     try:
         if start:
             start_dt = parse_datetime(start)
-            stmt = stmt.where(Event.end_time > start_dt)
         if end:
             end_dt = parse_datetime(end)
-            stmt = stmt.where(Event.start_time < end_dt)
     except ValueError:
         return jsonify({'error': 'Invalid date format. Use ISO 8601 format (YYYY-MM-DDThh:mm:ss)'}), 400
 
     if start_dt and end_dt and end_dt < start_dt:
         return jsonify({'error': 'End time cannot be before start time'}), 400
 
-    events = db.session.scalars(stmt.order_by(Event.start_time)).all()
-
-    return jsonify([event.to_dict() for event in events]), 200
+    # Apply date filters at database level
+    # For recurring events, we need to include them even if their original
+    # start/end times are outside the range, because they might have instances within the range
+    
+    if start_dt and end_dt:
+        # Both start and end provided: non-recurring events must overlap the range
+        stmt = stmt.where(
+            or_(
+                Event.recurrence_rule_id.isnot(None),  # Include all recurring events
+                and_(
+                    Event.end_time >= start_dt,  # Non-recurring event overlaps range
+                    Event.start_time < end_dt
+                )
+            )
+        )
+    elif start_dt:
+        # Only start provided: non-recurring events must end after start
+        stmt = stmt.where(
+            or_(
+                Event.recurrence_rule_id.isnot(None),  # Include all recurring events
+                Event.end_time >= start_dt
+            )
+        )
+    elif end_dt:
+        # Only end provided: non-recurring events must start before end
+        stmt = stmt.where(
+            or_(
+                Event.recurrence_rule_id.isnot(None),  # Include all recurring events
+                Event.start_time < end_dt
+            )
+        )
+    
+    # Get filtered events
+    all_events = db.session.scalars(stmt.order_by(Event.start_time)).all()
+    
+    result_events = []
+    
+    for event in all_events:
+        if event.recurrence_rule and expand_recurring:
+            # Generate recurring instances
+            if not start_dt or not end_dt:
+                # If no date range specified, use a default range
+                # Show occurrences from now until 1 year from now
+                range_start = start_dt or datetime.now(timezone.utc)
+                range_end = end_dt or (range_start + timedelta(days=365))
+            else:
+                range_start = start_dt
+                range_end = end_dt
+            
+            # Generate occurrence dates
+            occurrences = event.recurrence_rule.generate_occurrences(range_start, range_end)
+            
+            # Calculate event duration
+            event_duration = event.end_time - event.start_time
+            
+            # Create instance for each occurrence
+            for occurrence_start in occurrences:
+                occurrence_end = occurrence_start + event_duration
+                
+                # Filter recurring instances by the requested date range
+                if start_dt and occurrence_end < start_dt:
+                    continue
+                if end_dt and occurrence_start >= end_dt:
+                    continue
+                
+                # Create a virtual event instance
+                instance = {
+                    'id': event.id,  # Keep original event ID
+                    'created_at': event.created_at.isoformat(),
+                    'updated_at': event.updated_at.isoformat(),
+                    'title': event.title,
+                    'start_time': occurrence_start.isoformat(),
+                    'end_time': occurrence_end.isoformat(),
+                    'description': event.description,
+                    'location': event.location,
+                    'all_day': event.all_day,
+                    'is_recurring_instance': True,
+                    'recurrence_rule': event.recurrence_rule.to_dict()
+                }
+                result_events.append(instance)
+        else:
+            # Non-recurring event (already filtered by database query)
+            event_dict = event.to_dict()
+            event_dict['is_recurring_instance'] = False
+            result_events.append(event_dict)
+    
+    # Sort by start time
+    result_events.sort(key=lambda x: x['start_time'])
+    
+    return jsonify(result_events), 200
 
 
 @api_bp.route('/events/<int:event_id>', methods=['GET'])
@@ -143,7 +241,7 @@ def get_event(event_id):
 @api_bp.route('/events', methods=['POST'])
 def create_event():
     """
-    Create a new event
+    Create a new event, optionally with recurrence
     ---
     tags:
       - Events
@@ -184,6 +282,41 @@ def create_event():
               type: boolean
               description: Whether the event lasts all day
               default: false
+            recurrence:
+              type: object
+              description: Recurrence rule for the event
+              properties:
+                freq:
+                  type: string
+                  enum: ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY']
+                  description: Frequency of recurrence
+                  example: "WEEKLY"
+                interval:
+                  type: integer
+                  description: Repeat every N periods
+                  default: 1
+                  example: 1
+                until:
+                  type: string
+                  format: date-time
+                  description: End date for recurrence
+                  example: "2025-12-31T23:59:59"
+                count:
+                  type: integer
+                  description: Number of occurrences
+                  example: 10
+                byday:
+                  type: string
+                  description: Days of week (MO,TU,WE,TH,FR,SA,SU)
+                  example: "TU,TH"
+                bymonthday:
+                  type: string
+                  description: Days of month (1-31)
+                  example: "1,15"
+                bymonth:
+                  type: string
+                  description: Months (1-12)
+                  example: "1,6,12"
     responses:
       201:
         description: Event created successfully
@@ -206,6 +339,8 @@ def create_event():
               type: string
             all_day:
               type: boolean
+            recurrence_rule:
+              type: object
       400:
         description: Invalid input or validation error
         schema:
@@ -243,13 +378,48 @@ def create_event():
         if end_time < start_time:
             return jsonify({'error': 'End time cannot be before start time'}), 400
 
+        # Handle recurrence if provided
+        recurrence_rule = None
+        if 'recurrence' in data and data['recurrence']:
+            recurrence_data = data['recurrence']
+            
+            # Validate frequency
+            freq = recurrence_data.get('freq', '').upper()
+            if freq not in ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY']:
+                return jsonify({'error': 'Invalid frequency. Must be DAILY, WEEKLY, MONTHLY, or YEARLY'}), 400
+            
+            # Parse until date if provided
+            until = None
+            if 'until' in recurrence_data and recurrence_data['until']:
+                try:
+                    until = parse_datetime(recurrence_data['until'])
+                except ValueError:
+                    return jsonify({'error': 'Invalid until date format'}), 400
+            
+            # Validate count and until (only one should be provided)
+            count = recurrence_data.get('count')
+            if count and until:
+                return jsonify({'error': 'Cannot specify both count and until'}), 400
+            
+            recurrence_rule = RecurrenceRule(
+                freq=freq,
+                dtstart=start_time,
+                interval=recurrence_data.get('interval', 1),
+                until=until,
+                count=count,
+                byday=recurrence_data.get('byday'),
+                bymonthday=recurrence_data.get('bymonthday'),
+                bymonth=recurrence_data.get('bymonth')
+            )
+
         event = Event(
             title=title,
             description=data.get('description', None),
             start_time=start_time,
             end_time=end_time,
             location=data.get('location', None),
-            all_day=data.get('all_day', False)
+            all_day=data.get('all_day', False),
+            recurrence_rule=recurrence_rule
         )
 
         db.session.add(event)
@@ -265,7 +435,7 @@ def create_event():
 @api_bp.route('/events/<int:event_id>', methods=['PUT'])
 def update_event(event_id):
     """
-    Update an existing event
+    Update an existing event and optionally its recurrence rule
     ---
     tags:
       - Events
@@ -306,6 +476,26 @@ def update_event(event_id):
             all_day:
               type: boolean
               description: Updated all-day status
+            recurrence:
+              type: object
+              description: Updated recurrence rule (null to remove recurrence)
+              properties:
+                freq:
+                  type: string
+                  enum: ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY']
+                interval:
+                  type: integer
+                until:
+                  type: string
+                  format: date-time
+                count:
+                  type: integer
+                byday:
+                  type: string
+                bymonthday:
+                  type: string
+                bymonth:
+                  type: string
     responses:
       200:
         description: Event updated successfully
@@ -328,6 +518,8 @@ def update_event(event_id):
               type: string
             all_day:
               type: boolean
+            recurrence_rule:
+              type: object
       400:
         description: Invalid input or validation error
         schema:
@@ -409,6 +601,66 @@ def update_event(event_id):
                 return jsonify({'error': 'all_day must be a boolean'}), 400
             event.all_day = data['all_day']
 
+        # Handle recurrence rule updates
+        if 'recurrence' in data:
+            recurrence_data = data['recurrence']
+            
+            if recurrence_data is None:
+                # Remove recurrence (convert to one-time event)
+                if event.recurrence_rule:
+                    old_rule = event.recurrence_rule
+                    event.recurrence_rule = None
+                    event.recurrence_rule_id = None
+                    db.session.delete(old_rule)
+            else:
+                # Update or create recurrence rule
+                freq = recurrence_data.get('freq', '').upper()
+                if freq not in ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY']:
+                    db.session.rollback()
+                    return jsonify({'error': 'Invalid frequency. Must be DAILY, WEEKLY, MONTHLY, or YEARLY'}), 400
+                
+                # Parse until date if provided
+                until = None
+                if 'until' in recurrence_data and recurrence_data['until']:
+                    try:
+                        until = parse_datetime(recurrence_data['until'])
+                    except ValueError:
+                        db.session.rollback()
+                        return jsonify({'error': 'Invalid until date format'}), 400
+                
+                # Validate count and until (only one should be provided)
+                count = recurrence_data.get('count')
+                if count and until:
+                    db.session.rollback()
+                    return jsonify({'error': 'Cannot specify both count and until'}), 400
+                
+                # Use updated start_time if provided, otherwise keep existing
+                dtstart = new_start_time if new_start_time else event.start_time
+                
+                if event.recurrence_rule:
+                    # Update existing rule
+                    event.recurrence_rule.freq = freq
+                    event.recurrence_rule.dtstart = dtstart
+                    event.recurrence_rule.interval = recurrence_data.get('interval', 1)
+                    event.recurrence_rule.until = until
+                    event.recurrence_rule.count = count
+                    event.recurrence_rule.byday = recurrence_data.get('byday')
+                    event.recurrence_rule.bymonthday = recurrence_data.get('bymonthday')
+                    event.recurrence_rule.bymonth = recurrence_data.get('bymonth')
+                else:
+                    # Create new rule
+                    new_rule = RecurrenceRule(
+                        freq=freq,
+                        dtstart=dtstart,
+                        interval=recurrence_data.get('interval', 1),
+                        until=until,
+                        count=count,
+                        byday=recurrence_data.get('byday'),
+                        bymonthday=recurrence_data.get('bymonthday'),
+                        bymonth=recurrence_data.get('bymonth')
+                    )
+                    event.recurrence_rule = new_rule
+
         db.session.commit()
         return jsonify(event.to_dict()), 200
 
@@ -451,6 +703,86 @@ def delete_event(event_id):
         db.session.commit()
         return '', 204
 
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+
+##################### Recurrence Rule Routes #####################
+@api_bp.route('/recurrence-rules', methods=['GET'])
+def get_recurrence_rules():
+    """
+    Get all recurrence rules
+    ---
+    tags:
+      - Recurrence Rules
+    responses:
+      200:
+        description: List of recurrence rules
+        schema:
+          type: array
+          items:
+            type: object
+    """
+    
+    stmt = db.select(RecurrenceRule)
+    rules = db.session.scalars(stmt).all()
+    return jsonify([rule.to_dict() for rule in rules]), 200
+
+
+@api_bp.route('/recurrence-rules/<int:rule_id>', methods=['GET'])
+def get_recurrence_rule(rule_id):
+    """
+    Get a single recurrence rule by ID
+    ---
+    tags:
+      - Recurrence Rules
+    parameters:
+      - name: rule_id
+        in: path
+        type: integer
+        required: true
+        description: ID of the recurrence rule
+    responses:
+      200:
+        description: Recurrence rule details
+      404:
+        description: Recurrence rule not found
+    """
+    
+    rule = db.get_or_404(RecurrenceRule, rule_id)
+    return jsonify(rule.to_dict()), 200
+
+
+@api_bp.route('/recurrence-rules/<int:rule_id>', methods=['DELETE'])
+def delete_recurrence_rule(rule_id):
+    """
+    Delete a recurrence rule (will also delete associated events due to cascade)
+    ---
+    tags:
+      - Recurrence Rules
+    parameters:
+      - name: rule_id
+        in: path
+        type: integer
+        required: true
+        description: ID of the recurrence rule to delete
+    responses:
+      204:
+        description: Recurrence rule deleted successfully
+      404:
+        description: Recurrence rule not found
+      500:
+        description: Server error
+    """
+    
+    rule = db.get_or_404(RecurrenceRule, rule_id)
+    
+    try:
+        db.session.delete(rule)
+        db.session.commit()
+        return '', 204
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
