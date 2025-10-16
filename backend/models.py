@@ -43,7 +43,7 @@ class RecurrenceRule(Base):
     # Required fields
     freq: Mapped[str] = mapped_column(String(20))  # 'DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'
     _dtstart: Mapped[datetime] = mapped_column('dtstart', DateTime)  # Start date of recurrence
-    
+
     # Optional fields
     interval: Mapped[int] = mapped_column(default=1)  # Repeat every N periods
     _until: Mapped[datetime | None] = mapped_column('until', DateTime, default=None)  # End date
@@ -102,16 +102,16 @@ class RecurrenceRule(Base):
     def generate_occurrences(self, start: datetime, end: datetime) -> List[datetime]:
         """
         Generate occurrence datetimes within the specified range.
-        
+
         Args:
             start: Start of the range to generate occurrences
             end: End of the range to generate occurrences
-            
+
         Returns:
             List of datetime objects representing occurrences
         """
         from dateutil.rrule import rrule, DAILY, WEEKLY, MONTHLY, YEARLY, MO, TU, WE, TH, FR, SA, SU
-        
+
         # Map frequency strings to constants
         freq_map = {
             'DAILY': DAILY,
@@ -119,40 +119,40 @@ class RecurrenceRule(Base):
             'MONTHLY': MONTHLY,
             'YEARLY': YEARLY
         }
-        
+
         # Map weekday strings to constants
         weekday_map = {
             'MO': MO, 'TU': TU, 'WE': WE, 'TH': TH,
             'FR': FR, 'SA': SA, 'SU': SU
         }
-        
+
         freq_const = freq_map.get(self.freq)
         if not freq_const:
             return []
-        
+
         # Parse byday parameter
         byweekday = None
         if self.byday:
             days = [d.strip().upper() for d in self.byday.split(',')]
             byweekday = [weekday_map[d] for d in days if d in weekday_map]
-        
+
         # Parse bymonthday parameter
         bymonthday_list = None
         if self.bymonthday:
             bymonthday_list = [int(d.strip()) for d in self.bymonthday.split(',')]
-        
+
         # Parse bymonth parameter
         bymonth_list = None
         if self.bymonth:
             bymonth_list = [int(m.strip()) for m in self.bymonth.split(',')]
-        
+
         # Create rrule
         rule_params = {
             'freq': freq_const,
             'interval': self.interval,
             'dtstart': self.dtstart.replace(tzinfo=None),  # rrule needs naive datetime
         }
-        
+
         if self.until:
             rule_params['until'] = self.until.replace(tzinfo=None)
         if self.count:
@@ -163,9 +163,9 @@ class RecurrenceRule(Base):
             rule_params['bymonthday'] = bymonthday_list
         if bymonth_list:
             rule_params['bymonth'] = bymonth_list
-        
+
         rule = rrule(**rule_params)
-        
+
         # Get occurrences in the range
         # rrule.between is inclusive on start, exclusive on end
         occurrences = rule.between(
@@ -173,7 +173,7 @@ class RecurrenceRule(Base):
             end.replace(tzinfo=None),
             inc=True
         )
-        
+
         # Convert back to UTC aware datetimes
         return [dt.replace(tzinfo=timezone.utc) for dt in occurrences]
 
@@ -221,7 +221,7 @@ class Event(Base):
     description: Mapped[str | None] = mapped_column(Text, default=None)
     location: Mapped[str | None] = mapped_column(String(200), default=None)
     all_day: Mapped[bool] = mapped_column(Boolean, default=False)
-    
+
     # Recurrence relationship
     recurrence_rule_id: Mapped[int | None] = mapped_column(ForeignKey('recurrence_rules.id'), default=None)
     recurrence_rule: Mapped["RecurrenceRule | None"] = relationship(back_populates="events")
