@@ -50,7 +50,7 @@ const App = () => {
 
           {/* Content Area */}
           <div
-            className={`flex-1 flex transition-opacity duration-300 overflow-hidden gap-2 md:gap-3 lg:gap-4 ${
+            className={`flex-1 flex transition-opacity duration-300 overflow-hidden gap-1 md:gap-2 lg:gap-3 ${
               isTransitioning ? "opacity-0" : "opacity-100"
             }`}
           >
@@ -62,11 +62,12 @@ const App = () => {
                 </div>
 
                 {/* Right Column - Calendar and TaskList stacked */}
-                <div className="flex-1 min-w-0 flex flex-col gap-2 md:gap-3 lg:gap-4">
-                  <div className="flex-[1.5] min-h-0">
+                <div className="flex-[1] min-w-0 flex flex-col space-y-2 md:space-y-3 lg:space-y-4">
+                  <div className="flex-[1] min-h-0 min-w-0 overflow-scroll">
                     <Calendar />
                   </div>
-                  <div className="flex-[1] min-w-0">
+
+                  <div className="flex-[0.5] min-h-0 min-w-0">
                     <TaskList />
                   </div>
                 </div>
