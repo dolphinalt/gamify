@@ -274,7 +274,7 @@ const DayCell = ({ day, onClick }: DayCellProps) => {
 };
 
 // Demo with sample events
-const CalendarDemo = () => {
+const CalendarEventList = () => {
   const sampleEvents: CalendarEvent[] = [
     {
       title: "Team Meeting",
@@ -292,4 +292,4 @@ const CalendarDemo = () => {
   return <Calendar events={sampleEvents} onDateSelect={handleDateSelect} />;
 };
 
-export default CalendarDemo;
+export default CalendarEventList;
